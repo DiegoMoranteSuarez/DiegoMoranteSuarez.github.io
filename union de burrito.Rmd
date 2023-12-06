@@ -1,0 +1,333 @@
+---
+title: "Ubicate Cachimbo"
+output: 
+  flexdashboard::flex_dashboard:
+    theme: journal
+    orientation: columns
+    social: menu
+    source_code: embed
+    vertical_layout: fill
+    width: 100%  
+    css: 
+      - "styles.css"
+---
+
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(leaflet)
+library(foreign)
+library(fontawesome)
+library(knitr)
+library(foreign)
+library(geojsonio)
+library(knitr)
+library(knitr)
+setwd("C:/Users/diego/Documents/DashBoardUNMSM")
+
+```
+
+# SERVICIOS
+
+## SERVICIOS  {data-width=500}
+
+
+### VISOR DE SERVICIOS
+
+```{r}
+  
+  
+  # Ruta al archivo DBF
+  ruta_dbf <- "C:/Users/diego/Documents/DashBoardUNMSM/tabla/servicio_table3.dbf"
+  
+  # Leer el archivo DBF y convertirlo a un dataframe
+  dataframe_servicios <- read.dbf(ruta_dbf)
+  
+  # first 20 quakes
+  df.20 <- dataframe_servicios[1:57,]
+  
+  getColor <- function(dataframe_servicios) {
+    sapply(dataframe_servicios$TIPO_DE_SE, function(TIPO_DE_SE) {
+      # Personaliza los colores según los nombres de servicios
+      if (TIPO_DE_SE == "LIBRERÍA/IMPRENTA") {
+        "green"
+      } else if (TIPO_DE_SE == "KIOSKO/BODEGA") {
+        "yellowgreen"
+      } else if (TIPO_DE_SE == "CAFETERIA") {
+        "orange"
+      } else if (TIPO_DE_SE == "BIBLIOTECA") {
+        "blue"
+      } else {
+        "red"
+      }
+    })
+  }
+  
+  icons <- awesomeIcons(
+    icon = 'ios-close',
+    iconColor = 'black',
+    library = 'ion',
+    markerColor = getColor(df.20)
+  )
+  
+  
+  # Leer el archivo GeoJSON
+  facultades <- geojsonio::geojson_read("C:/Users/diego/Documents/DashBoardUNMSM/Json/Facultad_UNMSM.geojson", what = "sp")
+  servicios <- geojsonio::geojson_read("C:/Users/diego/Documents/DashBoardUNMSM/Json/SERV_UNMSM.geojson", what = "sp")
+  
+  # Cargar datos del GeoJSON (líneas)
+  ruta_burro <- geojsonio::geojson_read("C:/Users/diego/Documents/MapaUNMSM/facultades/geojson/ruta_burro.geojson", what = "sp")
+  
+  paraderos <- geojsonio::geojson_read("C:/Users/diego/Documents/MapaUNMSM/facultades/geojson/paraderos.geojson", what = "sp")
+  
+  
+  
+  
+  # Crear el mapa
+  m <- leaflet() %>%
+    setView(lng = -77.082, lat = -12.056, zoom = 16)  %>%
+    addProviderTiles("MapBox", options = providerTileOptions(
+      ID = "mapbox.light",
+      accessToken = Sys.getenv('MAPBOX_ACCESS_TOKEN')
+    ))
+  
+  
+  
+  # Añadir control de capas y leyenda
+  m <- m %>%
+    addLayersControl(
+      overlayGroups = c("Facultades", "CartoDB","Ruta Bus","Servicios", "Paraderos"),  # Grupos de capas
+      options = layersControlOptions(collapsed = FALSE)
+    ) %>%
+    addLegend(
+      position = "topright",
+      colors = c("green","orange","dodgerblue","red","blue","lightblue","lightsalmon", "gray"),
+      labels = c("Librería/Imprenta","Cafetería","Biblioteca","Kiosko/Bodega
+","Paraderos","Bus Perimetral","Facultades", "CartoDB"),
+      title = "Leyenda"
+    )
+  
+  # Crear etiquetas
+  labels <- sprintf(
+    "<strong>%s</strong>",
+    facultades$NOMFAC
+  ) %>% lapply(htmltools::HTML)
+  
+  # Añadir polígonos al mapa
+  m <- m %>% 
+    addPolygons(data=facultades,
+      weight = 2,
+      opacity = 1,
+      color = "lightsalmon",
+      dashArray = "0.5",
+      fillOpacity = 0.7,
+      highlightOptions = highlightOptions(
+        weight = 2,
+        color = "#000",
+        dashArray = "",
+        fillOpacity = 0.9,
+        bringToFront = TRUE),
+      label = labels,
+      labelOptions = labelOptions(
+        style = list("font-weight" = "normal", padding = "3px 8px"),
+        textsize = "15px",
+        direction = "auto"),
+      group = "Facultades"  # Agregar grupo para el control de capas
+    ) %>%
+    addProviderTiles(providers$CartoDB.Positron, group = "CartoDB") %>%
+    addMiniMap()
+  
+  m <- m %>%
+  addEasyButton(easyButton(
+    icon="fa-globe", title="Zoom Inicial",
+    onClick=JS("function(btn, map){ map.setZoom(16); }"))) %>%
+  addEasyButton(easyButton(
+    icon="fa-crosshairs", title="Localízame",
+    onClick=JS("function(btn, map){ map.locate({setView: true}); }")))
+  
+  labels_ruta <- sprintf(
+    "<strong>Distancia:</strong> %s m",
+    ruta_burro$Longitud
+  ) %>% lapply(htmltools::HTML)
+  
+    # Añadir líneas con etiquetas emergentes
+  m <- m %>% addPolylines(
+    data = ruta_burro,
+    color = "lightskyblue",     # Color del borde
+    fillOpacity = 0.2,# Color de las líneas
+    weight = 8,            # Grosor de las líneas
+    group = "Ruta Bus",  # Grupo para el control de capas
+    popup = ~paste( ruta_burro$Longitud, "metros"),
+    label = labels_ruta,
+    labelOptions = labelOptions(
+      style = list("font-weight" = "normal", padding = "3px 8px"),
+      textsize = "15px",
+      direction = "auto")
+  )
+  
+  labels_paraderos <- sprintf(
+  "<strong>Paradero:</strong> %s",
+  paraderos$Paradero
+) %>% lapply(htmltools::HTML)
+  
+  
+   m <- m %>% addPolygons(
+    data = paraderos,
+    fillColor = "blue",  # Color de relleno
+    color = "blue",     # Color del borde
+    fillOpacity = 0.5,    # Opacidad del relleno
+    weight = 6,            # Grosor del borde
+    group = "Paraderos",  # Información emergente al hacer clic
+    label = labels_paraderos)
+  
+  
+  
+  labels_serv <- sprintf(
+    "<strong>%s</strong><br/>Horario: %s - %s",
+    df.20$TIPO_DE_SE, df.20$HOR_INI, df.20$HOR_FIN
+  ) %>% lapply(htmltools::HTML)
+  
+  m <- m %>%
+    addAwesomeMarkers(data = df.20, ~ESTE, ~NORTE, icon=icons, label=labels_serv, group = "Servicios") %>%
+    setView(lng = -77.082, lat = -12.056, zoom = 16)  %>%
+    addProviderTiles(providers$CartoDB.Positron, group = "CartoDB") %>%
+    addMiniMap()
+  
+  
+  
+  
+  
+  # Mostrar el mapa
+  m
+
+
+```
+
+## UNMSM  {data-width=200}
+
+### **CIUDAD UNIVERSITARIA**
+
+La reconocida Ciudad Universitaria fue creada en la década de los años sesenta convirtiéndose en uno de los campus universitarios más reconocidos del país donde convergen la identidad y la historia. Sus edificaciones dan cuenta de la diversidad académica que ofrece la Decana de América y donde conviven estudiantes, docenes y personal administrativo de las facultades correspondientes a las cinco áreas del conocimiento académicas que la constituyen. En este espacio se han formado muchas de las figuras más notables del arte, ciencia y política del Perú, y de sus aulas han egresado destacados estudiosos que resaltan a nivel nacional e internacional.
+
+
+### BUS PERIMETRAL
+
+📢 ¡𝒃𝒖𝒔 𝒑𝒆𝒓𝒊𝒎𝒆𝒕𝒓𝒂𝒍! De lunes a viernes, en el horario de 8:00 a.m. a 9:00 p.m., la comunidad sanmarquina podrá hacer uso de nuestro bus que recorre todo el perímetro de la Ciudad Universitaria. ¡𝗕𝗶𝗲𝗻𝘃𝗲𝗻𝗶𝗱𝗼 𝗱𝗲 𝘃𝘂𝗲𝗹𝘁𝗮, “𝗯𝘂𝗿𝗿𝗶𝘁𝗼” 𝘀𝗮𝗻𝗺𝗮𝗿𝗾𝘂𝗶𝗻𝗼!
+
+### BUS
+
+```{r}
+
+knitr::include_graphics("C:/Users/diego/Documents/DashBoardUNMSM/logos e imagenes/bus.jpg")
+
+```
+
+# COMEDOR UNIVERSITARIO
+
+## UNMSM
+
+### **Oficina General de Bienestar Universitario - UNMSM**
+
+Estimada comunidad sanmarquina, les comunicamos que a partir del lunes 30 de octubre, la adquisición de tickets para acceder al comedor en nuestras diversas sedes será exclusivamente virtual.
+🗓️ Fecha de inicio: 30 de octubre
+📲 Mantener el modo oscuro deshabilitado de tu dispositivo móvil para la lectura del ticket al ingreso al servido.
+
+🕘Horario de emisión de tickets virtuales:
+* Desayuno: 6:00 am
+-Almuerzo: 10:00 am
+-Cena: 4:00 pm
+
+🕘Horario de ingreso al servido:
+-Desayuno: 7:00 am
+-Almuerzo: 12:00 pm
+-Cena: 5:00 pm
+
+👀 Acceso preferencial de residentes y CONADIS no emiten ticket, es directo mostrando documentos de identidad que acredite su condición.
+🏅 Deportistas pueden emitir si desean su ticket virtual o ingresar con la cola preferencial, respetando los 80 primeros en Ciudad Universitaria y 20 en Cangallo.
+
+🔴[OBLIGATORIO] Les recordamos la importancia de tener consigo su documento físico (carnet o DNI) al momento de ingresar. Para alumnos residentes mostrar su carnet de residentes, en caso de robo o perdida, acercarse a la oficina de servicio social.
+
+👀 [IMPORTANTE] El ticket es personal e intransferible, se estará verificando el momento del ingreso.
+
+❌ [PENALIZACIÓN] Alumno que acumule tres tickets sin utilizar en un mismo servicio será suspendido por siete días del comedor en intervalos de quince días.
+```{r}
+
+
+
+
+```
+### **USO DE LA APLICACIÓN**
+
+```{r}
+knitr::include_graphics("C:/Users/diego/Documents/DashBoardUNMSM/logos e imagenes/app_uso.jpg")
+```
+
+## **TICKETS VIRTUAL**
+### **TICKETS VIRTUAL**
+
+```{r}
+knitr::include_graphics("C:/Users/diego/Documents/DashBoardUNMSM/logos e imagenes/apk_unmsm.jpg")
+```
+
+# BUS EXTERNO
+
+## BUS EXTERNO
+
+### RUTAS DEL BUS EXTERNO
+📢 ¡Atención sanmarquinos!
+✅ Los buses de la #UNMSM reanudan sus servicios de traslado externo. ¡Conoce las rutas!
+🚌Paradero inicial
+6:15 a. m. Hospital Sergio E. Bernales (Norte), hospital María Auxiliadora (Sur), grifo Vista Alegre Prolongación Javier Prado (Centro) y San Carlos - San Juan de Lurigancho (Este). 
+🚌Salida de la Ciudad Universitaria
+Administrativos: 
+5:50 p. m. Explanada de Facultad de Odontología
+Estudiantes: 
+6:05 p. m. Explanada de la Facultad de Derecho
+🔴Las rutas de los buses estarán sujetos a modificación a raiz de las obras y construcciones que se están llevando a cabo en Lima Metropolitana.
+
+Ruta Norte: 
+https://www.facebook.com/watch/?v=1265586960832468
+
+Ruta Centro: 
+https://www.facebook.com/watch/?v=1300748160786033
+
+Ruta Sur: 
+https://www.facebook.com/watch/?v=1424578748327902
+
+Ruta Este: 
+https://www.facebook.com/watch/?v=1263155727623178
+
+### BUS EXTERNO
+
+```{r}
+knitr::include_graphics("C:/Users/diego/Documents/DashBoardUNMSM/logos e imagenes/bus externo.jpg")
+```
+
+## BUS EXTERNO
+
+### RUTA NORTE
+
+```{r}
+knitr::include_graphics("C:/Users/diego/Documents/DashBoardUNMSM/logos e imagenes/norte.jpg")
+```
+
+### RUTA CENTRO
+
+```{r}
+knitr::include_graphics("C:/Users/diego/Documents/DashBoardUNMSM/logos e imagenes/centro.jpg")
+```
+
+## BUS EXTERNO
+
+### RUTA SUR
+
+```{r}
+knitr::include_graphics("C:/Users/diego/Documents/DashBoardUNMSM/logos e imagenes/sur.jpg")
+```
+
+### RUTA ESTE
+
+```{r}
+knitr::include_graphics("C:/Users/diego/Documents/DashBoardUNMSM/logos e imagenes/este.jpg")
+```
+
