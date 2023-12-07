@@ -8,13 +8,15 @@ output:
     source_code: embed
     vertical_layout: fill
     width: 70%  
-    css: 
-      - "styles.css"
 ---
+
+
+
+
+
 ```{css, echo=FALSE}
 body {
   font-size: 15px;
-}
 ```
 
 
@@ -31,6 +33,8 @@ library(RColorBrewer)
 library(raster)
 library(DT)
 library(plotly)
+library(leafem)
+library(htmlwidgets)
 
 ```
 
@@ -105,10 +109,10 @@ paleta_calor_servicio <- colorNumeric(c("red", "orange", "yellow", "blue", "dark
   # Crear el mapa
   m <- leaflet() %>%
     setView(lng = -77.082, lat = -12.056, zoom = 16)  %>%
-    addProviderTiles("MapBox", options = providerTileOptions(
-      ID = "mapbox.light",
-      accessToken = Sys.getenv('MAPBOX_ACCESS_TOKEN')
-    ))
+    addTiles(
+    urlTemplate = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    attribution = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+  )
   
   
   
@@ -162,7 +166,8 @@ paleta_calor_servicio <- colorNumeric(c("red", "orange", "yellow", "blue", "dark
     onClick=JS("function(btn, map){ map.setZoom(16); }"))) %>%
   addEasyButton(easyButton(
     icon="fa-crosshairs", title="Localízame",
-    onClick=JS("function(btn, map){ map.locate({setView: true}); }")))
+    onClick=JS("function(btn, map){ map.locate({setView: true}); }"))) 
+  
   
   labels_ruta <- sprintf(
     "<strong>Distancia:</strong> %s m",
@@ -377,5 +382,70 @@ knitr::include_graphics("C:/Users/diego/Documents/DashBoardUNMSM/logos e imagene
 
 ```{r}
 knitr::include_graphics("C:/Users/diego/Documents/DashBoardUNMSM/logos e imagenes/este.jpg")
+```
+
+# AUTORES { .inverse }
+
+## ESCUELA Y UNIVERSIDAD
+
+### UNIVERSIDAD Y ESCUELA PROFESIONAL
+
+```{r}
+knitr::include_graphics("C:/Users/diego/Documents/DashBoardUNMSM/logos e imagenes/IG_unmSM.png")
+```
+
+
+
+Column 
+-------------------------------------
+
+### Autor 1
+
+<p style="text-align: center;"><span style="color: #000000;"><strong>DIEGO MORANTE SUAREZ</strong></span></p>
+<p style="text-align: center;"><em><span style="color: #000000;"><strong>-Ingenier&iacute;a Geogr&aacute;fica - UNMSM-</strong></span></em></p>
+<p style="text-align: left;"><span style="color: #000000;"><strong>FB:&nbsp;<a href="https://www.facebook.com/Diegomorantesuarez/">https://www.facebook.com/Diegomorantesuarez/</a></strong></span></p>
+<p style="text-align: left;"><span style="color: #000000;"><strong>LI:&nbsp;<a href="https://www.linkedin.com/in/diego-humberto-morante-suarez-b38a43279/">https://www.linkedin.com/in/diego-humberto-morante-suarez-b38a43279/</a></strong></span></p>
+<p style="text-align: left;"><span style="color: #000000;"><strong>GH:&nbsp;<a href="https://github.com/DiegoMoranteSuarez">https://github.com/DiegoMoranteSuarez</a></strong></span></p>
+<p style="text-align: left;"><span style="color: #000000;"><strong>GMAIL: <a href="mailto:diego.morante@unmsm.edu.pe">diego.morante@unmsm.edu.pe</a></strong></span></p>
+<p style="text-align: left;">&nbsp;</p>
+
+### Foto
+
+```{r}
+knitr::include_graphics("C:/Users/diego/Documents/DashBoardUNMSM/logos e imagenes/Diego.png")
+```
+
+Column
+-------------------------------------
+
+### Autor 2
+
+<p style="text-align: center;"><strong>DANAE QUISPE SOLORZANO</strong></p>
+<p style="text-align: center;"><em><span style="color: #000000;"><strong>-Ingenier&iacute;a Geogr&aacute;fica - UNMSM-</strong></span></em></p>
+<p style="text-align: left;"><span style="color: #000000;"><strong>FB: https://www.facebook.com/profile.php?id=100001447611062&amp;sk=about</strong></span></p>
+<p style="text-align: left;"><span style="color: #000000;"><strong>LI: https://www.linkedin.com/in/danae-quispe-solorzano-06bb21234/</strong></span></p>
+<p style="text-align: left;"><span style="color: #000000;"><strong>CORREO: danae.quispe@unmsm.edu.pe </strong></span></p>
+
+### Foto
+
+```{r}
+knitr::include_graphics("C:/Users/diego/Documents/DashBoardUNMSM/logos e imagenes/Danae.png")
+```
+
+Column 
+-------------------------------------
+
+### Autor 3
+
+<p style="text-align: center;"><strong>ANDERSON LLIUYA CARRERA</strong></p>
+<p style="text-align: center;"><em><span style="color: #000000;"><strong>-Ingenier&iacute;a Geogr&aacute;fica - UNMSM-</strong></span></em></p>
+<p style="text-align: left;"><span style="color: #000000;"><strong>FB: https://www.facebook.com/anderson.lliuya</strong></span></p>
+<p style="text-align: left;"><span style="color: #000000;"><strong>LI: https://www.linkedin.com/in/anderson-lliuya-carrera-113a25213/?originalSubdomain=pe</strong></span></p>
+<p style="text-align: left;"><span style="color: #000000;"><strong>CORREO: anderson.lliuya@unmsm.edu.pe</strong></span></p>
+
+### Foto
+
+```{r}
+knitr::include_graphics("C:/Users/diego/Documents/DashBoardUNMSM/logos e imagenes/Anderson.png")
 ```
 
