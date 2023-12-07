@@ -7,10 +7,15 @@ output:
     social: menu
     source_code: embed
     vertical_layout: fill
-    width: 100%  
+    width: 70%  
     css: 
       - "styles.css"
 ---
+```{css, echo=FALSE}
+body {
+  font-size: 15px;
+}
+```
 
 
 ```{r setup, include=FALSE}
@@ -21,19 +26,22 @@ library(fontawesome)
 library(knitr)
 library(foreign)
 library(geojsonio)
-library(knitr)
+library(dplyr)
 library(RColorBrewer)
 library(raster)
-
+library(DT)
+library(plotly)
 
 ```
 
-# SERVICIOS
+# SERVICIOS EN LA CIUDAD UNIVERSITARIA
 
-## SERVICIOS  {data-width=500}
+Column {data-width=1000}
+-------------------------------------
 
 
 ### VISOR DE SERVICIOS
+
 
 ```{r}
   
@@ -216,51 +224,54 @@ paleta_calor_servicio <- colorNumeric(c("red", "orange", "yellow", "blue", "dark
 
 ```
 
-## UNMSM  {data-width=200}
 
-### **CIUDAD UNIVERSITARIA**
+Column {.tabset .tabset-fade}
+-------------------------------------
+
+### Descripción
+
+**DESCRIPCIÓN**
+
+El geovisor presenta de manera visual la ubicación geográfica de los servicios disponibles en la ciudad universitaria, con un enfoque específico en resaltar sus respectivos horarios de atención y, en particular, sus momentos de cierre. Esta representación cartográfica permite a los usuarios obtener rápidamente información sobre la disposición espacial de los servicios y sus horarios operativos.
+
+En el geovisor, una capa de escala de colores ha sido implementada para ofrecer una representación gráfica de los servicios que extienden sus horas de cierre hasta altas horas de la noche. Esta funcionalidad emplea una paleta de colores que abarca el periodo desde las 15:00 hasta las 22:00 horas, proporcionando una instantánea visual intuitiva de los servicios que operan durante este intervalo temporal.
+
+Adicionalmente, la inclusión de la ruta del bus perimetral interno en el geovisor brinda a los usuarios la posibilidad de conocer la distancia aproximada entre paradas a lo largo de la ruta. Aunque se destaca que los tiempos de recorrido pueden experimentar variaciones, especialmente en horas pico con mayor afluencia estudiantil, se estima que el bus demora aproximadamente 15 minutos para completar todo el trayecto.
+
+
+**CIUDAD UNIVERSITARIA**
 
 La reconocida Ciudad Universitaria fue creada en la década de los años sesenta convirtiéndose en uno de los campus universitarios más reconocidos del país donde convergen la identidad y la historia. Sus edificaciones dan cuenta de la diversidad académica que ofrece la Decana de América y donde conviven estudiantes, docenes y personal administrativo de las facultades correspondientes a las cinco áreas del conocimiento académicas que la constituyen. En este espacio se han formado muchas de las figuras más notables del arte, ciencia y política del Perú, y de sus aulas han egresado destacados estudiosos que resaltan a nivel nacional e internacional.
 
+### Tabla
 
-### BUS PERIMETRAL
+```{r, echo=FALSE}
 
-📢 ¡𝒃𝒖𝒔 𝒑𝒆𝒓𝒊𝒎𝒆𝒕𝒓𝒂𝒍! De lunes a viernes, en el horario de 8:00 a.m. a 9:00 p.m., la comunidad sanmarquina podrá hacer uso de nuestro bus que recorre todo el perímetro de la Ciudad Universitaria. ¡𝗕𝗶𝗲𝗻𝘃𝗲𝗻𝗶𝗱𝗼 𝗱𝗲 𝘃𝘂𝗲𝗹𝘁𝗮, “𝗯𝘂𝗿𝗿𝗶𝘁𝗼” 𝘀𝗮𝗻𝗺𝗮𝗿𝗾𝘂𝗶𝗻𝗼!
+servicios_CU <- dplyr::select(df.20, OBJECTID, ESTE, NORTE, HOR_INI,TIPO_DE_SE, HOR_FIN)
 
-### BUS
-
-```{r}
-
-knitr::include_graphics("C:/Users/diego/Documents/DashBoardUNMSM/logos e imagenes/bus.jpg")
+datatable(servicios_CU ,class="cell-border hover")
 
 ```
 
+### Gráfica
 
-# MAPA DE CALOR
-## GEOVISOR
-### **Mapa de Calor**
-```{r}
-serv_calor <- raster("C:/Users/diego/Documents/DashBoardUNMSM/raster/servicio_calor.tif") 
+```{r, echo=FALSE}
 
+grafico_serv_torta <- data.frame(
+  TIPO_DE_SE = c("CAFETERÍA", "KIOSKO/BODEGA", "LIBRERÍA/IMPRENTA","BIBLIOTECA", "AUTOSEGURO", "SALUD/CLINICA"),
+  X1960 = c(8, 29, 15, 5, 1, 1 )
+)
 
+data_torta <- grafico_serv_torta[, c('TIPO_DE_SE', 'X1960')]
 
-perimetro <- shapefile("C:/Users/diego/Documents/MapaUNMSM/facultades/Perimetro UNMSM/Perimetro_unmsm.shp")
+fig <- plot_ly(data_torta, labels = ~TIPO_DE_SE, values = ~X1960)  %>% add_pie(hole = 0.6)
+fig <- fig %>% layout(
+  title = 'PORCENTAJES DE SERVICIOS EN LA CIUDAD UNIVERSITARIA',
+  xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+  yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE)
+)
 
-puntos_de_serv <- shapefile("C:/Users/diego/Documents/DashBoardUNMSM/Shapes/servicios/puntos_servi_spline.shp")
-
-
-
-calor_unmsm <- raster::crop(serv_calor, extent(perimetro))
-
-calor_mask <- mask(x = calor_unmsm, mask = perimetro)
-paleta_serv <- colorRampPalette(c("red","orange", "yellow", "blue","darkblue"))
-
-plot(calor_mask,col = paleta_serv(500) , main= "Hora de Cierre de los Servicios [h]", alpha = 0.8)
-plot(perimetro, add=TRUE)
-plot(facultades, add=TRUE,col = "gray", border = "white", lwd = 2)
-plot(puntos_de_serv, add=TRUE, pch=8, col="green", cex=.75)
-
-
+fig
 
 ```
 
